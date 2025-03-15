@@ -1,142 +1,178 @@
-</main>
+</div>
+<!-- End of Main Content -->
 
 <!-- Footer -->
-<footer class="main-footer">
+<footer class="footer mt-auto">
     <div class="container-fluid">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                &copy; <?php echo date('Y'); ?> CDK Wilayah Bojonegoro. All rights reserved.
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-0">&copy; <?php echo date('Y'); ?> CDK Wilayah Bojonegoro. Hak Cipta Dilindungi.</p>
             </div>
-            <div>
-                <span class="text-muted">v1.0.0</span>
+            <div class="col-md-6 text-md-end">
+                <p class="mb-0">Dibuat dengan <i class="ri-heart-fill text-danger"></i> oleh Tim IT</p>
             </div>
         </div>
     </div>
 </footer>
 </div>
+<!-- End of Main Content Wrapper -->
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- Bootstrap JS -->
+<!-- JavaScript Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- DataTables -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
-
-<!-- Summernote -->
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>
-
-<!-- Select2 -->
+<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Custom JS -->
+<script src="assets/js/dashboard.js"></script>
 
-<!-- Custom scripts -->
 <script>
-    // Toggle sidebar
-    document.getElementById('toggle-sidebar').addEventListener('click', function () {
-        document.getElementById('sidebar').classList.toggle('show');
-        document.getElementById('content-wrapper').classList.toggle('sidebar-open');
+    // Sidebar toggle
+    document.addEventListener('DOMContentLoaded', function () {
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.querySelector('.main-content');
+        const topbar = document.querySelector('.topbar');
+
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function () {
+                sidebar.classList.toggle('collapsed');
+
+                // Save state to localStorage
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+            });
+        }
+
+        // Check for saved state on page load
+        const sidebarState = localStorage.getItem('sidebarCollapsed');
+        if (sidebarState === 'true') {
+            sidebar.classList.add('collapsed');
+        }
+
+        // Mobile sidebar toggle
+        const mobileToggle = document.getElementById('mobileSidebarToggle');
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', function () {
+                sidebar.classList.toggle('mobile-show');
+            });
+
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function (e) {
+                if (window.innerWidth < 768 &&
+                    !sidebar.contains(e.target) &&
+                    !mobileToggle.contains(e.target) &&
+                    sidebar.classList.contains('mobile-show')) {
+                    sidebar.classList.remove('mobile-show');
+                }
+            });
+        }
     });
 
     // Initialize DataTables
-    $(document).ready(function () {
-        if ($.fn.DataTable) {
-            $('.data-table').DataTable({
-                responsive: true,
-                language: {
-                    search: "Cari:",
-                    lengthMenu: "Tampilkan _MENU_ entri per halaman",
-                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
-                    infoEmpty: "Menampilkan 0 sampai 0 dari 0 entri",
-                    infoFiltered: "(difilter dari _MAX_ total entri)",
-                    zeroRecords: "Tidak ada data yang cocok",
-                    emptyTable: "Tidak ada data dalam tabel",
-                    paginate: {
-                        first: "Pertama",
-                        previous: "Sebelumnya",
-                        next: "Selanjutnya",
-                        last: "Terakhir"
-                    }
-                }
-            });
-        }
-
-        // Initialize Summernote
-        if ($.fn.summernote) {
-            $('.summernote').summernote({
-                height: 300,
-                minHeight: 200,
-                maxHeight: 500,
-                toolbar: [
-                    ['style', ['style']],
-                    ['font', ['bold', 'underline', 'clear']],
-                    ['color', ['color']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['table', ['table']],
-                    ['insert', ['link', 'picture']],
-                    ['view', ['fullscreen', 'codeview', 'help']]
-                ],
-                placeholder: 'Tulis isi konten di sini...',
-                callbacks: {
-                    onImageUpload: function (files) {
-                        // Custom image upload if needed
-                        // This can be implemented later to match server-side upload
-                    }
-                }
-            });
-        }
-
-        // Initialize Select2
-        if ($.fn.select2) {
-            $('.select2').select2({
-                theme: 'bootstrap-5'
-            });
-        }
-
-        // Custom file input preview
-        $('.custom-file-input').on('change', function () {
-            var fileName = $(this).val().split('\\').pop();
-            $(this).siblings('.custom-file-label').addClass('selected').html(fileName);
-
-            // Image preview
-            var preview = $(this).siblings('.custom-file-preview').find('img');
-            if (preview.length && this.files && this.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    preview.attr('src', e.target.result);
-                    preview.parent().show();
-                }
-                reader.readAsDataURL(this.files[0]);
+    if (typeof $.fn.DataTable !== 'undefined') {
+        $('.datatable').DataTable({
+            responsive: true,
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/id.json'
             }
         });
+    }
 
-        // Confirmation dialog for delete actions
-        $('.btn-delete').on('click', function (e) {
-            if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-                e.preventDefault();
-            }
+    // Initialize Select2
+    if (typeof $.fn.select2 !== 'undefined') {
+        $('.select2').select2({
+            theme: 'bootstrap-5'
+        });
+    }
+
+    // Initialize Flatpickr date picker
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr(".flatpickr-date", {
+            dateFormat: "Y-m-d",
+            locale: "id"
         });
 
-        // Auto hide alerts after 5 seconds
-        setTimeout(function () {
-            $('.alert').fadeOut('slow');
-        }, 5000);
-    });
+        flatpickr(".flatpickr-datetime", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            time_24hr: true,
+            locale: "id"
+        });
+    }
 
-    // Function to preview image before upload
-    function previewImage(input, previewId) {
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                $('#' + previewId).attr('src', e.target.result);
-                $('#' + previewId).parent().show();
+    // Initialize Summernote editor
+    if (typeof $.fn.summernote !== 'undefined') {
+        $('.summernote').summernote({
+            height: 300,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'clear']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link', 'picture']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+            ],
+            callbacks: {
+                onImageUpload: function (files) {
+                    // You can implement image upload handling here
+                    for (let i = 0; i < files.length; i++) {
+                        uploadSummernoteImage(files[i], this);
+                    }
+                }
             }
-            reader.readAsDataURL(input.files[0]);
-        }
+        });
+    }
+
+    // Summernote image upload helper
+    function uploadSummernoteImage(file, editor) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('action', 'upload_editor_image');
+
+        fetch('ajax-handler.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    $(editor).summernote('insertImage', data.url);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Upload Gagal',
+                        text: data.message
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+
+    // Confirm Delete
+    function confirmDelete(url, name) {
+        Swal.fire({
+            title: 'Konfirmasi Hapus',
+            text: `Apakah Anda yakin ingin menghapus ${name}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+        return false;
     }
 </script>
 </body>

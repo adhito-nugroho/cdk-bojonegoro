@@ -1,192 +1,288 @@
 <?php
 /**
- * Index Admin (Dashboard) untuk website CDK Wilayah Bojonegoro
- * 
- * File ini menampilkan halaman dashboard admin
+ * Admin Dashboard Home
+ * CDK Wilayah Bojonegoro
  */
 
-// Define BASE_PATH
-define('BASE_PATH', dirname(__DIR__) . '/');
-
-// Include konfigurasi dan fungsi
-require_once 'config.php';
-require_once 'functions.php';
-require_once BASE_PATH . 'includes/db.php';
-require_once BASE_PATH . 'includes/functions.php';
-
-// Set judul halaman
-$page_title = 'Dashboard - Admin Panel CDK Wilayah Bojonegoro';
-
-// Dapatkan statistik dashboard
-$stats = getDashboardStats();
-
-// Dapatkan pesan terbaru
-$latestMessages = getLatestMessages();
-
-// Dapatkan publikasi terbaru
-$latestPublikasi = getLatestPublikasi();
-
-// Dapatkan aktivitas terbaru
-$latestActivities = getLatestActivities();
-
-// Dapatkan data statistik kunjungan (contoh data saja)
-$visitorStats = [
-    'labels' => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    'data' => [5, 10, 15, 12, 18, 22, 25, 30, 28, 25, 22, 20]
-];
-
-// Dapatkan data tren publikasi (contoh data saja)
-$publicationTrends = [
-    'labels' => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    'data' => [3, 5, 2, 4, 6, 8, 5, 7, 9, 6, 8, 7]
-];
+// Set page title
+$page_title = 'Dashboard';
 
 // Include header
-include_once 'includes/header.php';
+require_once 'includes/header.php';
+
+// Get stats for dashboard
+$conn = getConnection();
+
+// Count layanan
+$layananQuery = "SELECT COUNT(*) as total FROM layanan WHERE status = 'aktif'";
+$layananResult = $conn->query($layananQuery);
+$layananTotal = 0;
+if ($layananResult && $row = $layananResult->fetch_assoc()) {
+    $layananTotal = $row['total'];
+}
+
+// Count program
+$programQuery = "SELECT COUNT(*) as total FROM program WHERE status = 'aktif'";
+$programResult = $conn->query($programQuery);
+$programTotal = 0;
+if ($programResult && $row = $programResult->fetch_assoc()) {
+    $programTotal = $row['total'];
+}
+
+// Count publikasi
+$publikasiQuery = "SELECT COUNT(*) as total FROM publikasi WHERE status = 'published'";
+$publikasiResult = $conn->query($publikasiQuery);
+$publikasiTotal = 0;
+if ($publikasiResult && $row = $publikasiResult->fetch_assoc()) {
+    $publikasiTotal = $row['total'];
+}
+
+// Count galeri
+$galeriQuery = "SELECT COUNT(*) as total FROM galeri WHERE status = 'aktif'";
+$galeriResult = $conn->query($galeriQuery);
+$galeriTotal = 0;
+if ($galeriResult && $row = $galeriResult->fetch_assoc()) {
+    $galeriTotal = $row['total'];
+}
+
+// Count dokumen
+$dokumenQuery = "SELECT COUNT(*) as total FROM dokumen WHERE status = 'aktif'";
+$dokumenResult = $conn->query($dokumenQuery);
+$dokumenTotal = 0;
+if ($dokumenResult && $row = $dokumenResult->fetch_assoc()) {
+    $dokumenTotal = $row['total'];
+}
+
+// Count unread messages
+$pesanQuery = "SELECT COUNT(*) as total FROM pesan_kontak WHERE status = 'belum_dibaca'";
+$pesanResult = $conn->query($pesanQuery);
+$pesanTotal = 0;
+if ($pesanResult && $row = $pesanResult->fetch_assoc()) {
+    $pesanTotal = $row['total'];
+}
+
+// Get recent publikasi
+$recentPublikasiQuery = "SELECT id, judul, kategori, tanggal, status FROM publikasi ORDER BY tanggal DESC LIMIT 5";
+$recentPublikasiResult = $conn->query($recentPublikasiQuery);
+$recentPublikasi = [];
+if ($recentPublikasiResult) {
+    while ($row = $recentPublikasiResult->fetch_assoc()) {
+        $recentPublikasi[] = $row;
+    }
+}
+
+// Get recent messages
+$recentPesanQuery = "SELECT id, nama, email, kategori, created_at, status FROM pesan_kontak ORDER BY created_at DESC LIMIT 5";
+$recentPesanResult = $conn->query($recentPesanQuery);
+$recentPesan = [];
+if ($recentPesanResult) {
+    while ($row = $recentPesanResult->fetch_assoc()) {
+        $recentPesan[] = $row;
+    }
+}
+
+// Get recent activity logs
+$recentActivityQuery = "SELECT al.*, u.nama_lengkap 
+                        FROM activity_logs al 
+                        JOIN users u ON al.user_id = u.id 
+                        ORDER BY al.created_at DESC LIMIT 10";
+$recentActivityResult = $conn->query($recentActivityQuery);
+$recentActivity = [];
+if ($recentActivityResult) {
+    while ($row = $recentActivityResult->fetch_assoc()) {
+        $recentActivity[] = $row;
+    }
+}
 ?>
 
-<!-- Dashboard Content -->
+<!-- Page Header -->
 <div class="page-header">
-    <h4>Dashboard</h4>
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?php echo ADMIN_URL; ?>">Home</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
-        </ol>
-    </nav>
-</div>
-
-<!-- Stats Overview -->
-<div class="row">
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stats-card">
-            <div class="stats-icon users">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="stats-info">
-                <h5><?php echo $stats['total_users']; ?></h5>
-                <span>Total Pengguna</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stats-card">
-            <div class="stats-icon posts">
-                <i class="fas fa-newspaper"></i>
-            </div>
-            <div class="stats-info">
-                <h5><?php echo $stats['total_publikasi']; ?></h5>
-                <span>Total Publikasi</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stats-card">
-            <div class="stats-icon documents">
-                <i class="fas fa-file-alt"></i>
-            </div>
-            <div class="stats-info">
-                <h5><?php echo $stats['total_dokumen']; ?></h5>
-                <span>Total Dokumen</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="stats-card">
-            <div class="stats-icon messages">
-                <i class="fas fa-envelope"></i>
-            </div>
-            <div class="stats-info">
-                <h5><?php echo $stats['total_pesan']; ?></h5>
-                <span>Total Pesan <span class="text-danger">(<?php echo $stats['unread_pesan']; ?> belum
-                        dibaca)</span></span>
-            </div>
+    <div class="row align-items-center">
+        <div class="col">
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Selamat datang di Dashboard Admin CDK Wilayah Bojonegoro</p>
         </div>
     </div>
 </div>
 
-<!-- Charts & Recent Data -->
+<!-- Stats Cards -->
 <div class="row">
-    <!-- Visitor Stats Chart -->
-    <div class="col-xl-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-chart-line me-2"></i> Statistik Kunjungan</h5>
-                <div>
-                    <select class="form-select form-select-sm" id="yearSelector">
-                        <option value="2025" selected>2025</option>
-                        <option value="2024">2024</option>
-                    </select>
+    <!-- Layanan -->
+    <div class="col-lg-4 col-md-6 col-sm-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-primary">
+                        <i class="ri-customer-service-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h4 class="stat-number"><?php echo $layananTotal; ?></h4>
+                        <p class="stat-label">Layanan</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 6px;">
+                    <div class="progress-bar bg-primary" style="width: 100%"></div>
                 </div>
             </div>
-            <div class="card-body">
-                <canvas id="visitorChart" height="250"></canvas>
+            <div class="card-footer">
+                <a href="layanan.php" class="card-link">Kelola Layanan <i class="ri-arrow-right-line"></i></a>
             </div>
         </div>
     </div>
 
-    <!-- Publication Trends Chart -->
-    <div class="col-xl-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-chart-bar me-2"></i> Tren Publikasi</h5>
-                <div>
-                    <select class="form-select form-select-sm" id="publicationYearSelector">
-                        <option value="2025" selected>2025</option>
-                        <option value="2024">2024</option>
-                    </select>
+    <!-- Program -->
+    <div class="col-lg-4 col-md-6 col-sm-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-success">
+                        <i class="ri-file-list-3-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h4 class="stat-number"><?php echo $programTotal; ?></h4>
+                        <p class="stat-label">Program</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 6px;">
+                    <div class="progress-bar bg-success" style="width: 100%"></div>
                 </div>
             </div>
+            <div class="card-footer">
+                <a href="program.php" class="card-link">Kelola Program <i class="ri-arrow-right-line"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Publikasi -->
+    <div class="col-lg-4 col-md-6 col-sm-6">
+        <div class="card mb-4">
             <div class="card-body">
-                <canvas id="publicationChart" height="250"></canvas>
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-info">
+                        <i class="ri-newspaper-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h4 class="stat-number"><?php echo $publikasiTotal; ?></h4>
+                        <p class="stat-label">Publikasi</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 6px;">
+                    <div class="progress-bar bg-info" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="publikasi.php" class="card-link">Kelola Publikasi <i class="ri-arrow-right-line"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Galeri -->
+    <div class="col-lg-4 col-md-6 col-sm-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-warning">
+                        <i class="ri-image-2-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h4 class="stat-number"><?php echo $galeriTotal; ?></h4>
+                        <p class="stat-label">Galeri</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 6px;">
+                    <div class="progress-bar bg-warning" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="galeri.php" class="card-link">Kelola Galeri <i class="ri-arrow-right-line"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dokumen -->
+    <div class="col-lg-4 col-md-6 col-sm-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-danger">
+                        <i class="ri-file-pdf-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h4 class="stat-number"><?php echo $dokumenTotal; ?></h4>
+                        <p class="stat-label">Dokumen</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 6px;">
+                    <div class="progress-bar bg-danger" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="dokumen.php" class="card-link">Kelola Dokumen <i class="ri-arrow-right-line"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pesan -->
+    <div class="col-lg-4 col-md-6 col-sm-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-secondary">
+                        <i class="ri-message-3-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h4 class="stat-number"><?php echo $pesanTotal; ?></h4>
+                        <p class="stat-label">Pesan Belum Dibaca</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 6px;">
+                    <div class="progress-bar bg-secondary" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="pesan.php" class="card-link">Kelola Pesan <i class="ri-arrow-right-line"></i></a>
             </div>
         </div>
     </div>
 </div>
 
 <div class="row">
-    <!-- Recent Posts -->
-    <div class="col-xl-6 mb-4">
-        <div class="card">
+    <!-- Recent Publikasi -->
+    <div class="col-lg-6">
+        <div class="card mb-4">
             <div class="card-header">
-                <h5><i class="fas fa-newspaper me-2"></i> Publikasi Terbaru</h5>
-                <a href="<?php echo ADMIN_URL; ?>/modules/publikasi/index.php" class="btn btn-sm btn-primary">Lihat
-                    Semua</a>
+                <h5 class="card-title">Publikasi Terbaru</h5>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
+                    <table class="table table-hover mb-0">
                         <thead>
                             <tr>
                                 <th>Judul</th>
                                 <th>Kategori</th>
                                 <th>Tanggal</th>
-                                <th>Aksi</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (empty($latestPublikasi)): ?>
+                            <?php if (empty($recentPublikasi)): ?>
                                 <tr>
                                     <td colspan="4" class="text-center">Belum ada publikasi</td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($latestPublikasi as $publikasi): ?>
+                                <?php foreach ($recentPublikasi as $publikasi): ?>
                                     <tr>
-                                        <td><?php echo $publikasi['judul']; ?></td>
-                                        <td><span class="badge bg-info"><?php echo $publikasi['nama_kategori']; ?></span></td>
-                                        <td><?php echo formatTanggal($publikasi['tanggal_publikasi']); ?></td>
+                                        <td><?php echo htmlspecialchars($publikasi['judul']); ?></td>
+                                        <td><span
+                                                class="badge bg-info"><?php echo htmlspecialchars($publikasi['kategori']); ?></span>
+                                        </td>
+                                        <td><?php echo date('d/m/Y', strtotime($publikasi['tanggal'])); ?></td>
                                         <td>
-                                            <a href="<?php echo ADMIN_URL; ?>/modules/publikasi/edit.php?id=<?php echo $publikasi['id']; ?>"
-                                                class="btn btn-sm btn-warning">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="<?php echo SITE_URL; ?>/modules/publikasi/detail.php?slug=<?php echo $publikasi['slug']; ?>"
-                                                target="_blank" class="btn btn-sm btn-info">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
+                                            <?php if ($publikasi['status'] === 'published'): ?>
+                                                <span class="badge bg-success">Dipublikasi</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning">Draft</span>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -194,54 +290,49 @@ include_once 'includes/header.php';
                         </tbody>
                     </table>
                 </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="publikasi.php" class="btn btn-sm btn-primary">Lihat Semua Publikasi</a>
             </div>
         </div>
     </div>
 
     <!-- Recent Messages -->
-    <div class="col-xl-6 mb-4">
-        <div class="card">
+    <div class="col-lg-6">
+        <div class="card mb-4">
             <div class="card-header">
-                <h5><i class="fas fa-envelope me-2"></i> Pesan Terbaru</h5>
-                <a href="<?php echo ADMIN_URL; ?>/modules/pesan/index.php" class="btn btn-sm btn-primary">Lihat
-                    Semua</a>
+                <h5 class="card-title">Pesan Terbaru</h5>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
+                    <table class="table table-hover mb-0">
                         <thead>
                             <tr>
                                 <th>Nama</th>
                                 <th>Kategori</th>
-                                <th>Waktu</th>
+                                <th>Tanggal</th>
                                 <th>Status</th>
-                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (empty($latestMessages)): ?>
+                            <?php if (empty($recentPesan)): ?>
                                 <tr>
-                                    <td colspan="5" class="text-center">Belum ada pesan</td>
+                                    <td colspan="4" class="text-center">Belum ada pesan</td>
                                 </tr>
                             <?php else: ?>
-                                <?php foreach ($latestMessages as $message): ?>
+                                <?php foreach ($recentPesan as $pesan): ?>
                                     <tr>
-                                        <td><?php echo $message['nama']; ?></td>
-                                        <td><span class="badge bg-secondary"><?php echo ucfirst($message['kategori']); ?></span>
+                                        <td><?php echo htmlspecialchars($pesan['nama']); ?></td>
+                                        <td><span
+                                                class="badge bg-info"><?php echo htmlspecialchars($pesan['kategori']); ?></span>
                                         </td>
-                                        <td><?php echo formatTanggal($message['created_at'], true); ?></td>
+                                        <td><?php echo date('d/m/Y', strtotime($pesan['created_at'])); ?></td>
                                         <td>
-                                            <?php if ($message['is_read']): ?>
-                                                <span class="badge bg-success">Sudah dibaca</span>
+                                            <?php if ($pesan['status'] === 'belum_dibaca'): ?>
+                                                <span class="badge bg-danger">Belum Dibaca</span>
                                             <?php else: ?>
-                                                <span class="badge bg-danger">Belum dibaca</span>
+                                                <span class="badge bg-success">Sudah Dibaca</span>
                                             <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <a href="<?php echo ADMIN_URL; ?>/modules/pesan/view.php?id=<?php echo $message['id']; ?>"
-                                                class="btn btn-sm btn-info">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -250,171 +341,250 @@ include_once 'includes/header.php';
                     </table>
                 </div>
             </div>
+            <div class="card-footer text-center">
+                <a href="pesan.php" class="btn btn-sm btn-primary">Lihat Semua Pesan</a>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Recent Activities -->
+<!-- Activity Log -->
 <div class="row">
-    <div class="col-12 mb-4">
-        <div class="card">
+    <div class="col-12">
+        <div class="card mb-4">
             <div class="card-header">
-                <h5><i class="fas fa-history me-2"></i> Aktivitas Terbaru</h5>
+                <h5 class="card-title">Aktivitas Terbaru</h5>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead>
-                            <tr>
-                                <th>Pengguna</th>
-                                <th>Tindakan</th>
-                                <th>IP Address</th>
-                                <th>Waktu</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($latestActivities)): ?>
-                                <tr>
-                                    <td colspan="4" class="text-center">Belum ada aktivitas</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($latestActivities as $activity): ?>
-                                    <tr>
-                                        <td>
-                                            <?php if (!empty($activity['user_name'])): ?>
-                                                <span class="fw-bold"><?php echo $activity['user_name']; ?></span>
-                                            <?php else: ?>
-                                                <span class="text-muted">Unknown</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if (!empty($activity['table_name'])): ?>
-                                                <?php echo formatActionSummary($activity['action'], $activity['table_name']); ?>
-                                            <?php else: ?>
-                                                <?php echo $activity['action']; ?>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?php echo $activity['ip_address']; ?></td>
-                                        <td><?php echo formatTanggal($activity['created_at'], true); ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                <div class="timeline">
+                    <?php if (empty($recentActivity)): ?>
+                        <div class="timeline-item">
+                            <div class="timeline-content">
+                                <p class="text-center py-3">Belum ada aktivitas tercatat.</p>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($recentActivity as $activity): ?>
+                            <div class="timeline-item">
+                                <div class="timeline-icon 
+                                    <?php
+                                    $iconClass = 'bg-primary';
+                                    $icon = 'ri-edit-line';
+
+                                    if (strpos($activity['action'], 'tambah') !== false) {
+                                        $iconClass = 'bg-success';
+                                        $icon = 'ri-add-line';
+                                    } elseif (strpos($activity['action'], 'hapus') !== false) {
+                                        $iconClass = 'bg-danger';
+                                        $icon = 'ri-delete-bin-line';
+                                    } elseif (strpos($activity['action'], 'login') !== false) {
+                                        $iconClass = 'bg-info';
+                                        $icon = 'ri-login-circle-line';
+                                    }
+
+                                    echo $iconClass;
+                                    ?>">
+                                    <i class="<?php echo $icon; ?>"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-time">
+                                        <?php echo date('d M Y - H:i', strtotime($activity['created_at'])); ?></div>
+                                    <h5 class="timeline-title"><?php echo htmlspecialchars($activity['nama_lengkap']); ?></h5>
+                                    <p><?php echo htmlspecialchars($activity['action']); ?> di modul
+                                        <?php echo htmlspecialchars($activity['module']); ?>
+                                        <?php if ($activity['item_id']): ?>
+                                            (ID: <?php echo $activity['item_id']; ?>)
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Chart Initialization Script -->
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Visitor Stats Chart
-        const visitorCtx = document.getElementById('visitorChart').getContext('2d');
-        const visitorChart = new Chart(visitorCtx, {
-            type: 'line',
-            data: {
-                labels: <?php echo json_encode($visitorStats['labels']); ?>,
-                datasets: [{
-                    label: 'Jumlah Kunjungan',
-                    data: <?php echo json_encode($visitorStats['data']); ?>,
-                    borderColor: '#2e7d32',
-                    backgroundColor: 'rgba(46, 125, 50, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        }
-                    }
-                }
-            }
-        });
+<!-- Quick Links -->
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">Akses Cepat</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3 col-sm-6">
+                        <a href="publikasi-form.php"
+                            class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-3">
+                            <i class="ri-add-line"></i> Tambah Publikasi
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="galeri-form.php"
+                            class="btn btn-warning w-100 d-flex align-items-center justify-content-center gap-2 py-3">
+                            <i class="ri-add-line"></i> Tambah Galeri
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="dokumen-form.php"
+                            class="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 py-3">
+                            <i class="ri-add-line"></i> Tambah Dokumen
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <a href="statistik-form.php"
+                            class="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2 py-3">
+                            <i class="ri-add-line"></i> Tambah Statistik
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        // Publication Trends Chart
-        const publicationCtx = document.getElementById('publicationChart').getContext('2d');
-        const publicationChart = new Chart(publicationCtx, {
-            type: 'bar',
-            data: {
-                labels: <?php echo json_encode($publicationTrends['labels']); ?>,
-                datasets: [{
-                    label: 'Jumlah Publikasi',
-                    data: <?php echo json_encode($publicationTrends['data']); ?>,
-                    backgroundColor: 'rgba(46, 125, 50, 0.7)',
-                    borderColor: 'rgba(46, 125, 50, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        }
-                    }
-                }
-            }
-        });
+<style>
+    /* Stats Cards */
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
 
-        // Year selector for visitor chart
-        document.getElementById('yearSelector').addEventListener('change', function () {
-            // This would normally fetch new data from the server via AJAX
-            // For now, we'll just simulate a data change
-            const newData = [Math.random() * 10, Math.random() * 15, Math.random() * 20,
-            Math.random() * 25, Math.random() * 30, Math.random() * 35,
-            Math.random() * 40, Math.random() * 35, Math.random() * 30,
-            Math.random() * 25, Math.random() * 20, Math.random() * 15];
+    .stat-icon i {
+        font-size: 1.8rem;
+        color: #fff;
+    }
 
-            visitorChart.data.datasets[0].data = newData;
-            visitorChart.update();
-        });
+    .stat-content {
+        flex: 1;
+    }
 
-        // Year selector for publication chart
-        document.getElementById('publicationYearSelector').addEventListener('change', function () {
-            // This would normally fetch new data from the server via AJAX
-            // For now, we'll just simulate a data change
-            const newData = [Math.random() * 5, Math.random() * 8, Math.random() * 6,
-            Math.random() * 9, Math.random() * 7, Math.random() * 10,
-            Math.random() * 8, Math.random() * 9, Math.random() * 7,
-            Math.random() * 6, Math.random() * 8, Math.random() * 7];
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin: 0;
+        line-height: 1.2;
+    }
 
-            publicationChart.data.datasets[0].data = newData;
-            publicationChart.update();
-        });
-    });
-</script>
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-light);
+        margin: 0;
+    }
+
+    .card-footer {
+        background-color: transparent;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 0.75rem 1.5rem;
+    }
+
+    .card-link {
+        color: var(--primary-color);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .card-link:hover {
+        color: var(--primary-dark);
+    }
+
+    /* Timeline */
+    .timeline {
+        position: relative;
+        padding: 1.5rem;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-left: 3rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .timeline-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 14px;
+        height: 100%;
+        width: 2px;
+        background-color: #e9ecef;
+    }
+
+    .timeline-item:last-child::before {
+        height: 15px;
+    }
+
+    .timeline-icon {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+    }
+
+    .timeline-icon i {
+        font-size: 14px;
+        color: #fff;
+    }
+
+    .timeline-content {
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        position: relative;
+    }
+
+    .timeline-content::before {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: -8px;
+        width: 0;
+        height: 0;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-right: 8px solid #f8f9fa;
+    }
+
+    .timeline-time {
+        font-size: 0.75rem;
+        color: var(--text-light);
+        margin-bottom: 0.5rem;
+    }
+
+    .timeline-title {
+        font-size: 1rem;
+        margin: 0 0 0.5rem;
+    }
+
+    .timeline-content p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+</style>
 
 <?php
 // Include footer
-include_once 'includes/footer.php';
+require_once 'includes/footer.php';
 ?>
